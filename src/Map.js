@@ -20,9 +20,9 @@ export default function App() {
       center: [lng, lat],
       zoom: zoom,
     });
-    map.on("load", () => {
-      // Add a data source containing GeoJSON data.
-      map.addSource("maine", {
+
+    map.current.on("load", function () {
+      map.current.addSource("maine", {
         type: "geojson",
         data: {
           type: "Feature",
@@ -56,9 +56,7 @@ export default function App() {
           },
         },
       });
-
-      // Add a new layer to visualize the polygon.
-      map.addLayer({
+      map.current.addLayer({
         id: "maine",
         type: "fill",
         source: "maine", // reference the data source
@@ -68,8 +66,8 @@ export default function App() {
           "fill-opacity": 0.5,
         },
       });
-      // Add a black outline around the polygon.
-      map.addLayer({
+
+      map.current.addLayer({
         id: "outline",
         type: "line",
         source: "maine",
@@ -80,6 +78,8 @@ export default function App() {
         },
       });
     });
+
+    ////
   });
 
   useEffect(() => {
