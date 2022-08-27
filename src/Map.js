@@ -3,7 +3,7 @@ import mapboxgl from "!mapbox-gl"; // eslint-disable-line import/no-webpack-load
 import "./Map.css";
 
 mapboxgl.accessToken =
-  "pk.eyJ1IjoicGhpbGx5d29sZjIyIiwiYSI6ImNqcnpwMXlzbzFiNDY0OWx2MG9scDduZjQifQ.ZqHZhUY_sG7de-l8ChzWfQ";
+  "{key}";
 
 export default function App() {
   const mapContainer = useRef(null);
