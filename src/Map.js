@@ -8,9 +8,13 @@ mapboxgl.accessToken =
 export default function App() {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const [lng, setLng] = useState(-70.9);
-  const [lat, setLat] = useState(42.35);
-  const [zoom, setZoom] = useState(9);
+  const [lng, setLng] = useState(-65.9);
+  const [lat, setLat] = useState(45.35);
+  const [zoom, setZoom] = useState(5);
+
+  const [onOff, setOnOff] = useState("off");
+  const [earthOnOff, setEarthOnOff] = useState("off");
+  const [mapType, setMapType] = useState("streets-v11");
 
   useEffect(() => {
     if (map.current) return; // initialize map only once
@@ -21,7 +25,7 @@ export default function App() {
       zoom: zoom,
     });
 
-    map.current.on("load", function () {
+    map.current.on("style.load", function () {
       map.current.addSource("maine", {
         type: "geojson",
         data: {
@@ -56,11 +60,23 @@ export default function App() {
           },
         },
       });
+
+      map.current.addSource("earthquakes", {
+        type: "geojson",
+        // Use a URL for the value for the `data` property.
+        data: "https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson",
+      });
+
+      map.current.addSource("ny_zips", {
+        type: "geojson",
+        // Use a URL for the value for the `data` property.
+        data: "https://raw.githubusercontent.com/fedhere/PUI2015_EC/master/mam1612_EC/nyc-zip-code-tabulation-areas-polygons.geojson",
+      });
       map.current.addLayer({
         id: "maine",
         type: "fill",
         source: "maine", // reference the data source
-        layout: {},
+        layout: { visibility: "visible" },
         paint: {
           "fill-color": "#0080ff", // blue color fill
           "fill-opacity": 0.5,
@@ -71,14 +87,79 @@ export default function App() {
         id: "outline",
         type: "line",
         source: "maine",
-        layout: {},
+        layout: { visibility: onOff === "off" ? "visible" : "none" },
         paint: {
           "line-color": "#000",
           "line-width": 3,
         },
       });
+
+      map.current.addLayer({
+        id: "earthquakes-layer",
+        type: "circle",
+        source: "earthquakes",
+        layout: { visibility: earthOnOff === "off" ? "visible" : "none" },
+        paint: {
+          "circle-radius": 4,
+          "circle-stroke-width": 2,
+          "circle-color": "red",
+          "circle-stroke-color": "white",
+        },
+      });
+
+      map.current.addLayer({
+        id: "nyzips",
+        type: "line",
+        source: "ny_zips",
+        layout: { visibility: onOff ? "visible" : "none" },
+        paint: {
+          "line-color": "#000",
+          "line-width": 3,
+        },
+      });
+      map.current.addLayer({
+        id: "ny_fill_layer",
+        type: "fill",
+        source: "ny_zips",
+        paint: {
+          "fill-color": "rgba(200, 100, 240, 0.4)",
+          "fill-outline-color": "rgba(200, 100, 240, 1)",
+        },
+      });
+
+      console.log(map.current.getLayoutProperty("maine", "visibility"));
+    });
+    map.current.on("mouseenter", "earthquakes-layer", () => {
+      map.current.getCanvas().style.cursor = "pointer";
     });
 
+    map.current.on("mouseleave", "earthquakes-layer", () => {
+      map.current.getCanvas().style.cursor = "";
+    });
+
+    map.current.on("click", "earthquakes-layer", e => {
+      console.log(e.lnglat);
+      const coordinates = e.features[0].geometry.coordinates.slice();
+      const mag = e.features[0].properties.mag;
+      new mapboxgl.Popup()
+        .setMaxWidth("400px")
+        .setLngLat(coordinates)
+        // .setLngLat([-67.13734, 45.13745])
+        .setHTML(`<h1> Magnitude: ${mag} </h1>`)
+        .addTo(map.current);
+    });
+
+    map.current.on("click", "ny_fill_layer", e => {
+      console.log(e.lnglat);
+      //const coordinates = e.features[0].geometry.coordinates.slice();
+      const place = e.features[0].properties.PO_NAME;
+      new mapboxgl.Popup()
+        .setMaxWidth("400px")
+        .setLngLat(e.lngLat)
+        // .setLngLat([-67.13734, 45.13745])
+        .setHTML(`<h1> Place: ${place} </h1>`)
+        .addTo(map.current);
+    });
     ////
   });
 
@@ -91,11 +172,72 @@ export default function App() {
     });
   });
 
+  const toggleLayers = map => {
+    if (onOff === "off") {
+      map.current.setLayoutProperty("maine", "visibility", "none");
+      map.current.setLayoutProperty("outline", "visibility", "none");
+    } else {
+      map.current.setLayoutProperty("maine", "visibility", "visible");
+      map.current.setLayoutProperty("outline", "visibility", "visible");
+    }
+  };
+
+  const toggleEarthLayers = map => {
+    if (earthOnOff === "off") {
+      map.current.setLayoutProperty("earthquakes-layer", "visibility", "none");
+    } else {
+      map.current.setLayoutProperty(
+        "earthquakes-layer",
+        "visibility",
+        "visible"
+      );
+    }
+  };
+
+  const handleLayer = () => {
+    console.log(onOff);
+    if (onOff === "on") {
+      setOnOff("off");
+    } else {
+      setOnOff("on");
+    }
+
+    toggleLayers(map);
+  };
+
+  const handleEarthLayer = () => {
+    if (earthOnOff === "on") {
+      setEarthOnOff("off");
+    } else {
+      setEarthOnOff("on");
+    }
+    toggleEarthLayers(map);
+  };
+
+  const changeBaseMap = () => {
+    if (mapType === "streets-v11") {
+      map.current.setStyle(`mapbox://styles/mapbox/satellite-v9`);
+      setMapType("satellite-v9");
+    } else {
+      map.current.setStyle(`mapbox://styles/mapbox/streets-v11`);
+      setMapType("streets-v11");
+    }
+  };
   return (
     <div>
       <div className="sidebar">
         Longitude: {lng} | Latitude: {lat} | Zoom: {zoom}
       </div>
+      <button className="button-sidebar" onClick={handleLayer}>
+        Toggle Maine
+      </button>
+      <button className="button-sidebar" onClick={handleEarthLayer}>
+        Toggle earthquakes
+      </button>
+
+      <button className="button-sidebar" onClick={changeBaseMap}>
+        Toggle base Map
+      </button>
       <div ref={mapContainer} className="map-container" />
     </div>
   );
