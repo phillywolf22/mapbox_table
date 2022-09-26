@@ -14,7 +14,7 @@ export default function App() {
 
   const [onOff, setOnOff] = useState("off");
   const [earthOnOff, setEarthOnOff] = useState("off");
-  const [mapType, setMapType] = useState("streets-v11");
+  const [mapType, setMapType] = useState("");
 
   useEffect(() => {
     if (map.current) return; // initialize map only once
@@ -26,6 +26,8 @@ export default function App() {
     });
 
     map.current.on("style.load", function () {
+      console.log(mapType);
+      console.log(earthOnOff);
       map.current.addSource("maine", {
         type: "geojson",
         data: {
@@ -72,6 +74,11 @@ export default function App() {
         // Use a URL for the value for the `data` property.
         data: "https://raw.githubusercontent.com/fedhere/PUI2015_EC/master/mam1612_EC/nyc-zip-code-tabulation-areas-polygons.geojson",
       });
+
+      map.current.addSource("tornados", {
+        type: "geojson",
+        data: "https://raw.githubusercontent.com/cutting-room-floor/tornado-analysis/master/tornadoes.json",
+      });
       map.current.addLayer({
         id: "maine",
         type: "fill",
@@ -94,6 +101,15 @@ export default function App() {
         },
       });
 
+      map.current.addLayer({
+        id: "tornado-layer",
+        type: "line",
+        source: "tornados",
+        paint: {
+          "line-color": "#0f3c4c",
+          "line-width": 3,
+        },
+      });
       map.current.addLayer({
         id: "earthquakes-layer",
         type: "circle",
@@ -131,9 +147,19 @@ export default function App() {
     });
     map.current.on("mouseenter", "earthquakes-layer", () => {
       map.current.getCanvas().style.cursor = "pointer";
+      console.log("hovering over earthquake layer");
     });
 
     map.current.on("mouseleave", "earthquakes-layer", () => {
+      map.current.getCanvas().style.cursor = "";
+    });
+
+    map.current.on("mouseenter", "ny_fill_layer", () => {
+      map.current.getCanvas().style.cursor = "pointer";
+      console.log("hovering over NY zipcodes layer");
+    });
+
+    map.current.on("mouseleave", "ny_fill_layer", () => {
       map.current.getCanvas().style.cursor = "";
     });
 
@@ -183,8 +209,10 @@ export default function App() {
   };
 
   const toggleEarthLayers = map => {
+    console.log(earthOnOff);
     if (earthOnOff === "off") {
       map.current.setLayoutProperty("earthquakes-layer", "visibility", "none");
+      //map.current.setPaintProperty("tornado-layer", "line-color", "#ff69b4"); // this works here
     } else {
       map.current.setLayoutProperty(
         "earthquakes-layer",
@@ -215,8 +243,11 @@ export default function App() {
   };
 
   const changeBaseMap = () => {
+    //console.log(mapType);
     if (mapType === "streets-v11") {
       map.current.setStyle(`mapbox://styles/mapbox/satellite-v9`);
+
+      //map.current.setPaintProperty("tornado-layer", "line-color", "#ff69b4");
       setMapType("satellite-v9");
     } else {
       map.current.setStyle(`mapbox://styles/mapbox/streets-v11`);
